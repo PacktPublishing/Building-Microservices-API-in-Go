@@ -2,9 +2,10 @@ package app
 
 import (
 	"fmt"
-	"github.com/ashishjuyal/banking/domain"
+	"github.com/ashishjuyal/banking-auth/domain"
+	"github.com/ashishjuyal/banking-auth/service"
 	"github.com/ashishjuyal/banking-lib/logger"
-	"github.com/ashishjuyal/banking/service"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -13,63 +14,21 @@ import (
 	"time"
 )
 
-func sanityCheck() {
-	envProps := []string{
-		"SERVER_ADDRESS",
-		"SERVER_PORT",
-		"DB_USER",
-		"DB_PASSWD",
-		"DB_ADDR",
-		"DB_PORT",
-		"DB_NAME",
-	}
-	for _, k := range envProps {
-		if os.Getenv(k) == "" {
-			logger.Fatal(fmt.Sprintf("Environment variable %s not defined. Terminating application...", k))
-		}
-	}
-}
-
 func Start() {
-
 	sanityCheck()
-
 	router := mux.NewRouter()
+	authRepository := domain.NewAuthRepository(getDbClient())
+	ah := AuthHandler{service.NewLoginService(authRepository, domain.GetRolePermissions())}
 
-	//wiring
-	//ch := CustomerHandlers{service.NewCustomerService(domain.NewCustomerRepositoryStub())}
-	dbClient := getDbClient()
-	customerRepositoryDb := domain.NewCustomerRepositoryDb(dbClient)
-	accountRepositoryDb := domain.NewAccountRepositoryDb(dbClient)
-	ch := CustomerHandlers{service.NewCustomerService(customerRepositoryDb)}
-	ah := AccountHandler{service.NewAccountService(accountRepositoryDb)}
+	router.HandleFunc("/auth/login", ah.Login).Methods(http.MethodPost)
+	router.HandleFunc("/auth/register", ah.NotImplementedHandler).Methods(http.MethodPost)
+	router.HandleFunc("/auth/refresh", ah.Refresh).Methods(http.MethodPost)
+	router.HandleFunc("/auth/verify", ah.Verify).Methods(http.MethodGet)
 
-	// define routes
-	router.
-		HandleFunc("/customers", ch.getAllCustomers).
-		Methods(http.MethodGet).
-		Name("GetAllCustomers")
-	router.
-		HandleFunc("/customers/{customer_id:[0-9]+}", ch.getCustomer).
-		Methods(http.MethodGet).
-		Name("GetCustomer")
-	router.
-		HandleFunc("/customers/{customer_id:[0-9]+}/account", ah.NewAccount).
-		Methods(http.MethodPost).
-		Name("NewAccount")
-	router.
-		HandleFunc("/customers/{customer_id:[0-9]+}/account/{account_id:[0-9]+}", ah.MakeTransaction).
-		Methods(http.MethodPost).
-		Name("NewTransaction")
-
-	am := AuthMiddleware{domain.NewAuthRepository()}
-	router.Use(am.authorizationHandler())
-	// starting server
 	address := os.Getenv("SERVER_ADDRESS")
 	port := os.Getenv("SERVER_PORT")
-	logger.Info(fmt.Sprintf("Starting server on %s:%s ...", address, port))
+	logger.Info(fmt.Sprintf("Starting OAuth server on %s:%s ...", address, port))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), router))
-
 }
 
 func getDbClient() *sqlx.DB {
@@ -89,4 +48,21 @@ func getDbClient() *sqlx.DB {
 	client.SetMaxOpenConns(10)
 	client.SetMaxIdleConns(10)
 	return client
+}
+
+func sanityCheck() {
+	envProps := []string{
+		"SERVER_ADDRESS",
+		"SERVER_PORT",
+		"DB_USER",
+		"DB_PASSWD",
+		"DB_ADDR",
+		"DB_PORT",
+		"DB_NAME",
+	}
+	for _, k := range envProps {
+		if os.Getenv(k) == "" {
+			logger.Error(fmt.Sprintf("Environment variable %s not defined. Terminating application...", k))
+		}
+	}
 }

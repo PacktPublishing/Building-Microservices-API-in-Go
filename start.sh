@@ -1,6 +1,6 @@
 #!/bin/bash
 SERVER_ADDRESS=localhost \
-SERVER_PORT=8000 \
+SERVER_PORT=8181 \
 DB_USER=root \
 DB_PASSWD=codecamp \
 DB_ADDR=localhost \

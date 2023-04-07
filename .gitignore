@@ -1,4 +1,3 @@
 .idea/
 *.iml
-banking
-mocks/
+banking-auth

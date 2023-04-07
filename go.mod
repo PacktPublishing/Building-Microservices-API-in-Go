@@ -1,13 +1,11 @@
-module github.com/ashishjuyal/banking
+module github.com/ashishjuyal/banking-auth
 
 go 1.15
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
-	github.com/ashishjuyal/banking-lib v1.0.1
+	github.com/ashishjuyal/banking-lib v1.0.2
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/golang/mock v1.4.4
 	github.com/gorilla/mux v1.8.0
 	github.com/jmoiron/sqlx v1.2.0
-	go.uber.org/multierr v1.6.0 // indirect
 )
